@@ -9,64 +9,70 @@ import java.io.InputStream;
 
 public class myLangWalker {
     public static class XMLEmitter extends myLangBaseListener {
-        ParseTreeProperty<String> xml = new ParseTreeProperty<String>();
-        String getXML(ParseTree ctx) { return xml.get(ctx); }
-        void setXML(ParseTree ctx, String s) { xml.put(ctx, s); }
+        ParseTreeProperty<String> json = new ParseTreeProperty<String>();
+        String getJson(ParseTree ctx) { return json.get(ctx); }
+        void setJson(ParseTree ctx, String s) { json.put(ctx, s); }
 
         public void exitLang(myLangParser.LangContext ctx) {
-            setXML(ctx, getXML(ctx.getChild(0)));
+            setJson(ctx, getJson(ctx.getChild(0)));
         }
 
         public void exitAnObject(myLangParser.AnObjectContext ctx) {
             StringBuilder buf = new StringBuilder();
+            buf.append("{");
             buf.append("\n");
             for (myLangParser.PairContext pctx : ctx.pair()) {
-                buf.append(getXML(pctx));
+                buf.append(getJson(pctx)+",\n");
             }
-            setXML(ctx, buf.toString());
+            buf.deleteCharAt(buf.length()-1);
+            buf.deleteCharAt(buf.length()-1);
+            buf.append("\n");
+            buf.append("}");
+            setJson(ctx, buf.toString());
         }
         public void exitEmptyObject(myLangParser.EmptyObjectContext ctx) {
-            setXML(ctx, "");
+            setJson(ctx, "");
         }
 
         public void exitArrayOfValues(myLangParser.ArrayOfValuesContext ctx) {
             StringBuilder buf = new StringBuilder();
+            buf.append("[");
             buf.append("\n");
             for (myLangParser.ValueContext vctx : ctx.value()) {
-                buf.append("<element>"); // conjure up element for valid XML
-                buf.append(getXML(vctx));
-                buf.append("</element>");
-                buf.append("\n");
+                buf.append(getJson(vctx));
+                buf.append(",\n");
             }
-            setXML(ctx, buf.toString());
+            buf.deleteCharAt(buf.length()-1);
+            buf.deleteCharAt(buf.length()-1);
+            buf.append("\n]");
+            setJson(ctx, buf.toString());
         }
 
         public void exitEmptyArray(myLangParser.EmptyArrayContext ctx) {
-            setXML(ctx, "");
+            setJson(ctx, "");
         }
 
         public void exitPair(myLangParser.PairContext ctx) {
-            String tag = stripQuotes(ctx.STRING().getText());
+            String tag = ctx.STRING().getText();
             myLangParser.ValueContext vctx = ctx.value();
-            String x = String.format("<%s>%s</%s>\n", tag, getXML(vctx), tag);
-            setXML(ctx, x);
+            String x = tag+": "+ getJson(vctx);
+            setJson(ctx, x);
         }
 
         public void exitObjectValue(myLangParser.ObjectValueContext ctx) {
-            // analogous to String value() {return object();}
-            setXML(ctx, getXML(ctx.object()));
+            setJson(ctx, getJson(ctx.object()));
         }
 
         public void exitArrayValue(myLangParser.ArrayValueContext ctx) {
-            setXML(ctx, getXML(ctx.array())); // String value() {return array();}
+            setJson(ctx, getJson(ctx.array())); // String value() {return array();}
         }
 
         public void exitAtom(myLangParser.AtomContext ctx) {
-            setXML(ctx, ctx.getText());
+            setJson(ctx, ctx.getText());
         }
 
         public void exitString(myLangParser.StringContext ctx) {
-            setXML(ctx, stripQuotes(ctx.getText()));
+            setJson(ctx, ctx.getText());
         }
 
         public static String stripQuotes(String s) {
@@ -77,7 +83,7 @@ public class myLangWalker {
 
     public static void main(String[] args) throws Exception {
         String inputFile = "C:\\Projects\\candylang.txt";
-        //if ( args.length>0 ) inputFile = args[0];
+        if ( args.length>0 ) inputFile = args[0];
         InputStream is = System.in;
         if ( inputFile!=null ) {
             is = new FileInputStream(inputFile);
@@ -88,12 +94,10 @@ public class myLangWalker {
         myLangParser parser = new myLangParser(tokens);
         parser.setBuildParseTree(true);
         ParseTree tree = parser.lang();
-        // show tree in text form
-//        System.out.println(tree.toStringTree(parser));
 
         ParseTreeWalker walker = new ParseTreeWalker();
         XMLEmitter converter = new XMLEmitter();
         walker.walk(converter, tree);
-        System.out.println(converter.getXML(tree));
+        System.out.println(converter.getJson(tree));
     }
 }

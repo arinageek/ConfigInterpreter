@@ -30,6 +30,14 @@ value
     |   'null'		# Atom
     ;
 
+ COMMENT
+     : '/*' .*? '*/' -> skip
+ ;
+
+ LINE_COMMENT
+     : '//' ~[\r\n]* -> skip
+ ;
+
 LCURLY : '{' ;
 LBRACK : '(' ;
 STRING :  '"' (ESC | ~["\\])* '"' ;

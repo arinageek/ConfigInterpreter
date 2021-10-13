@@ -75,10 +75,6 @@ public class myLangWalker {
             setJson(ctx, ctx.getText());
         }
 
-        public static String stripQuotes(String s) {
-            if ( s==null || s.charAt(0)!='"' ) return s;
-            return s.substring(1, s.length() - 1);
-        }
     }
 
     public static void main(String[] args) throws Exception {
